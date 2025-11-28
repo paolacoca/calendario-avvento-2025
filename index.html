@@ -6,6 +6,7 @@
   <title>Calendario dell’Avvento 2025 – Comune di Roccasicura</title>
   <link href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@400;500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
+
   <style>
     /* Bottone Cambia Nome */
     .btn-name {
@@ -47,7 +48,7 @@
     <a href="calendario.html" class="btn-enter">ENTRARE</a>
   </div>
 
-  <!-- ✏️ Bottone per cambiare nome -->
+  <!-- Bottone Cambia Nome -->
   <button class="btn-name" onclick="cambiaNome()">✏️ Cambia nome</button>
 
   <script>
@@ -64,8 +65,6 @@
         localStorage.setItem("utente", utente);
         alert("✨ Benvenuto! Il tuo nome sarà impostato come 'Ospite'");
       }
-    } else {
-      console.log(`Accesso automatico per ${utente}`);
     }
 
     // ✏️ Funzione per cambiare nome
@@ -79,3 +78,5 @@
   </script>
 </body>
 </html>
+
+
