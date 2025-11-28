@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Calendario dell’Avvento 2025 – Comune di Roccasicura</title>
+  <link href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <style>
+    /* Bottone Cambia Nome */
+    .btn-name {
+      position: absolute;
+      bottom: 25px;
+      right: 25px;
+      background-color: #f3e4e4;
+      color: #000;
+      border: none;
+      border-radius: 20px;
+      padding: 10px 22px;
+      font-weight: bold;
+      font-family: 'Ubuntu', sans-serif;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+    }
+
+    .btn-name:hover {
+      background-color: #b71c1c;
+      color: #fff;
+      transform: scale(1.05);
+    }
+
+    @media (max-width: 768px) {
+      .btn-name {
+        bottom: 15px;
+        right: 15px;
+        padding: 8px 18px;
+        font-size: 0.9em;
+      }
+    }
+  </style>
+</head>
+
+<body class="home">
+  <div class="overlay">
+    <img src="img/calendario_home.png" alt="Calendario dell’Avvento" class="cover-img">
+    <a href="calendario.html" class="btn-enter">ENTRARE</a>
+  </div>
+
+  <!-- ✏️ Bottone per cambiare nome -->
+  <button class="btn-name" onclick="cambiaNome()">✏️ Cambia nome</button>
+
+  <script>
+    // 🌟 Chiede il nome dell’utente solo la prima volta
+    let utente = localStorage.getItem("utente");
+
+    if (!utente) {
+      utente = prompt("🎄 Benvenuto! Inserisci il tuo nome per iniziare:");
+      if (utente && utente.trim() !== "") {
+        localStorage.setItem("utente", utente.trim());
+        alert(`✨ Benvenuto, ${utente.trim()}!`);
+      } else {
+        utente = "Ospite";
+        localStorage.setItem("utente", utente);
+        alert("✨ Benvenuto! Il tuo nome sarà impostato come 'Ospite'");
+      }
+    } else {
+      console.log(`Accesso automatico per ${utente}`);
+    }
+
+    // ✏️ Funzione per cambiare nome
+    function cambiaNome() {
+      const nuovoNome = prompt("Inserisci il nuovo nome giocatore:");
+      if (nuovoNome && nuovoNome.trim() !== "") {
+        localStorage.setItem("utente", nuovoNome.trim());
+        alert(`✅ Nome aggiornato a: ${nuovoNome}`);
+      }
+    }
+  </script>
+</body>
+</html>
