@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🎅 Giorno 3 – Babbo Natale raccogli i regali!</title>
+  <link href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      margin: 0;
+      background-color: #7b0412;
+      overflow: hidden;
+      font-family: 'Ubuntu', sans-serif;
+      color: #fff;
+      text-align: center;
+    }
+
+    h1 {
+      margin: 10px 0;
+      color: #ffd700;
+    }
+
+    .info {
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0, 0, 0, 0.4);
+      padding: 8px 16px;
+      border-radius: 12px;
+      font-size: 1.1em;
+      border: 1px solid #f5d97c;
+    }
+
+    canvas {
+      display: block;
+      margin: 20px auto 0;
+      background: url("../img/gioco3_sfondo.png") center/cover no-repeat;
+      border: 3px solid #f5d97c;
+      border-radius: 10px;
+      touch-action: none;
+    }
+
+    .boom {
+      position: absolute;
+      font-size: 2em;
+      color: #ff5555;
+      animation: fadeBoom 0.8s ease-out forwards;
+    }
+
+    @keyframes fadeBoom {
+      from { opacity: 1; transform: translateY(-20px) scale(1); }
+      to { opacity: 0; transform: translateY(-80px) scale(1.8); }
+    }
+
+    .btn-back {
+      display: inline-block;
+      margin-top: 20px;
+      background-color: #f3e4e4;
+      color: #000;
+      text-decoration: none;
+      padding: 12px 30px;
+      border-radius: 30px;
+      font-weight: bold;
+      transition: all 0.3s ease;
+    }
+
+    .btn-back:hover {
+      background-color:#7b0412;
+      color: white;
+      transform: scale(1.05);
+    }
+
+    .leaderboard {
+      margin-top: 15px;
+      background-color: rgba(255,255,255,0.1);
+      padding: 15px;
+      border-radius: 10px;
+      width: fit-content;
+      margin-inline: auto;
+    }
+
+    .leaderboard table {
+      border-collapse: collapse;
+      color: white;
+    }
+
+    .leaderboard th, .leaderboard td {
+      border-bottom: 1px solid #f5d97c;
+      padding: 6px 12px;
+    }
+  </style>
+</head>
+<body>
+  <h1>🎅 Giorno 3 – Babbo Natale raccogli i regali!</h1>
+  <canvas id="game" width="900" height="500"></canvas>
+  <div class="info" id="info">🎁 Punteggio: 0 | ⏱️ Tempo: 60s</div>
+
+  <div id="fine" style="display:none;">
+    <h2 id="messaggio"></h2>
+    <div class="leaderboard" id="leaderboard">
+      <h3>🏆 Classifica locale</h3>
+      <table id="score-table">
+        <tr><th>Nome</th><th>Punti</th></tr>
+      </table>
+    </div>
+    <a href="../calendario.html" class="btn-back">⬅ Torna al Calendario</a>
+  </div>
+
+  <script>
+    const nome = localStorage.getItem("utente") || "Ospite";
+    const canvas = document.getElementById("game");
+    const ctx = canvas.getContext("2d");
+
+    // 🪟 Adatta a telefono o PC
+    function resizeCanvas() {
+      if (window.innerWidth < 700) {
+        canvas.width = window.innerWidth - 20;
+        canvas.height = window.innerHeight * 0.6;
+      } else {
+        canvas.width = 900;
+        canvas.height = 500;
+      }
+    }
+    resizeCanvas();
+    window.addEventListener("resize", resizeCanvas);
+
+    // 🎅 Babbo Natale
+    const santa = { 
+      x: 100, 
+      y: canvas.height - 120, 
+      w: 70, 
+      h: 90, 
+      vy: 0, 
+      jumping: false, 
+      speed: 6 
+    };
+    const santaImg = new Image();
+    santaImg.src = "https://icons.iconarchive.com/icons/iconshock/merry-christmas/128/santa-claus-icon.png";
+
+    // 🎁 Regali e 💣 Bombe
+    const giftImg = new Image();
+    giftImg.src = "../img/gift.png";
+    const bombImg = new Image();
+    bombImg.src = "../img/bomba.png";
+
+    let objects = [];
+    const keys = {};
+    document.addEventListener("keydown", e => keys[e.key] = true);
+    document.addEventListener("keyup", e => keys[e.key] = false);
+
+    // 🖱️ / 📱 Salto e movimento
+    canvas.addEventListener("mousedown", jump);
+    canvas.addEventListener("touchstart", jump);
+
+    function jump() {
+      if (!santa.jumping) {
+        santa.vy = -12;
+        santa.jumping = true;
+      }
+    }
+
+    // Movimento orizzontale con mouse
+    canvas.addEventListener("mousemove", e => {
+      if (e.buttons > 0) {
+        const rect = canvas.getBoundingClientRect();
+        santa.x = e.clientX - rect.left - santa.w / 2;
+      }
+    });
+
+    // Movimento orizzontale con dito
+    let touchX = null;
+    canvas.addEventListener("touchmove", e => {
+      const delta = e.touches[0].clientX - (touchX || e.touches[0].clientX);
+      santa.x += delta * 0.2;
+      touchX = e.touches[0].clientX;
+    });
+    canvas.addEventListener("touchend", () => { touchX = null; });
+
+    // 🕓 Timer e punteggio
+    let score = 0;
+    let timeLeft = 60;
+    const info = document.getElementById("info");
+
+    function updateTimer() {
+      const interval = setInterval(() => {
+        timeLeft--;
+        if (timeLeft <= 0) {
+          clearInterval(interval);
+          endGame();
+        }
+      }, 1000);
+    }
+
+    // 🎲 Genera regali e bombe
+    function spawnObject() {
+      const isBomb = Math.random() < 0.25; // 25% bombe
+      const obj = {
+        x: Math.random() * (canvas.width - 40),
+        y: canvas.height - 160 - Math.random() * 100,
+        size: 40,
+        type: isBomb ? "bomb" : "gift",
+        collected: false
+      };
+      objects.push(obj);
+      setTimeout(() => {
+        obj.fade = true;
+        setTimeout(() => {
+          objects = objects.filter(o => o !== obj);
+        }, 400);
+      }, 2000);
+    }
+    setInterval(spawnObject, 1500);
+
+    function moveSanta() {
+      if (keys["ArrowLeft"]) santa.x -= santa.speed;
+      if (keys["ArrowRight"]) santa.x += santa.speed;
+      if (keys[" "] && !santa.jumping) jump();
+
+      santa.y += santa.vy;
+      santa.vy += 0.6;
+      if (santa.y > canvas.height - 120) {
+        santa.y = canvas.height - 120;
+        santa.vy = 0;
+        santa.jumping = false;
+      }
+      if (santa.x < 0) santa.x = 0;
+      if (santa.x + santa.w > canvas.width) santa.x = canvas.width - santa.w;
+    }
+
+    // 💥 Effetto bomba
+    function boomEffect(x, y) {
+      const boom = document.createElement("div");
+      boom.textContent = "💥 -5";
+      boom.classList.add("boom");
+      boom.style.left = `${x}px`;
+      boom.style.top = `${y}px`;
+      document.body.appendChild(boom);
+      setTimeout(() => boom.remove(), 800);
+    }
+
+    // 🔍 Collisioni
+    function checkCollisions() {
+      objects.forEach(o => {
+        if (!o.collected &&
+            santa.x < o.x + o.size &&
+            santa.x + santa.w > o.x &&
+            santa.y < o.y + o.size &&
+            santa.y + santa.h > o.y) {
+          o.collected = true;
+          if (o.type === "gift") score += 10;
+          else { score -= 5; boomEffect(santa.x + 50, santa.y); }
+          objects = objects.filter(x => x !== o);
+        }
+      });
+    }
+
+    // 🖼️ Disegno
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(santaImg, santa.x, santa.y, santa.w, santa.h);
+      objects.forEach(o => {
+        ctx.globalAlpha = o.fade ? 0.5 : 1;
+        ctx.drawImage(o.type === "gift" ? giftImg : bombImg, o.x, o.y, o.size, o.size);
+        ctx.globalAlpha = 1;
+      });
+      info.textContent = `🎁 ${nome} | Punti: ${score} | ⏱️ ${timeLeft}s`;
+    }
+
+    // 🌀 Ciclo di gioco
+    function gameLoop() {
+      moveSanta();
+      checkCollisions();
+      draw();
+      if (timeLeft > 0) requestAnimationFrame(gameLoop);
+    }
+
+    // 🏁 Fine gioco + classifica
+    function endGame() {
+      document.getElementById("fine").style.display = "block";
+      document.getElementById("messaggio").textContent =
+        `🎉 Bravo ${nome}! Hai totalizzato ${score} punti!`;
+      salvaPunteggio(nome, score);
+      mostraClassifica();
+    }
+
+    function salvaPunteggio(nome, punti) {
+      const key = "punteggi_giorno3";
+      let punteggi = JSON.parse(localStorage.getItem(key)) || [];
+      punteggi.push({ nome, punti });
+      punteggi.sort((a, b) => b.punti - a.punti);
+      localStorage.setItem(key, JSON.stringify(punteggi));
+    }
+
+    function mostraClassifica() {
+      const key = "punteggi_giorno3";
+      const punteggi = JSON.parse(localStorage.getItem(key)) || [];
+      const table = document.getElementById("score-table");
+      table.innerHTML = "<tr><th>Nome</th><th>Punti</th></tr>";
+      punteggi.slice(0, 10).forEach(p => {
+        const row = document.createElement("tr");
+        row.innerHTML = `<td>${p.nome}</td><td>${p.punti}</td>`;
+        table.appendChild(row);
+      });
+    }
+
+    santaImg.onload = () => {
+      updateTimer();
+      gameLoop();
+    };
+  </script>
+</body>
+</html>

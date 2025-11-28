@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🎄 Giorno 2 – Trova le parole di Natale 🎁</title>
+  <link href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Ubuntu', sans-serif;
+      background-color: #7b0412;
+      color: #fff;
+      text-align: center;
+      margin: 0;
+      padding: 20px;
+    }
+
+    h1 { color: #ffd700; margin-bottom: 5px; }
+    .timer { font-size: 1.3em; color: #ffd54f; margin: 10px 0 20px; }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(12, 2.2em);
+      justify-content: center;
+      gap: 4px;
+      margin: 20px auto;
+      user-select: none;
+    }
+
+    .cell {
+      width: 2.2em;
+      height: 2.2em;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-color: #fff8e1;
+      color: #000;
+      border-radius: 5px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .cell.highlight { background-color: #ffd54f; }
+    .cell.found { background-color: #00bfff; color: #fff; cursor: default; }
+
+    .word-list {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 10px;
+      margin-top: 25px;
+    }
+
+    .word {
+      background-color: rgba(255,255,255,0.15);
+      padding: 6px 14px;
+      border-radius: 20px;
+      border: 1px solid #f5d97c;
+      color: #fff;
+      font-weight: 500;
+    }
+
+    .word.found {
+      text-decoration: line-through;
+      opacity: 0.6;
+      background-color: rgba(0,191,255,0.3);
+    }
+
+    .completed {
+      margin-top: 20px;
+      font-size: 1.3em;
+      color: #00ff99;
+    }
+
+    .leaderboard {
+      margin-top: 35px;
+      background-color: rgba(255,255,255,0.1);
+      padding: 10px 15px;
+      border-radius: 10px;
+      display: inline-block;
+    }
+
+    .leaderboard table {
+      border-collapse: collapse;
+      width: 100%;
+      color: white;
+    }
+
+    .leaderboard th, .leaderboard td {
+      border-bottom: 1px solid #f5d97c;
+      padding: 6px 12px;
+    }
+
+    .btn-back {
+      display: inline-block;
+      margin-top: 30px;
+      background-color: #f3e4e4;
+      color: #000;
+      text-decoration: none;
+      padding: 12px 30px;
+      border-radius: 30px;
+      font-weight: bold;
+      transition: all 0.3s ease;
+    }
+
+    .btn-back:hover { background-color: #b71c1c; color: white; transform: scale(1.05); }
+  </style>
+</head>
+<body>
+  <h1>🎄 Giorno 2 – Trova le parole di Natale 🎁</h1>
+  <p>🎅 Buona fortuna, <span id="nome"></span>!</p>
+  <div class="timer" id="timer">⏱ Tempo: 0s</div>
+
+  <div class="grid" id="grid"></div>
+  <div class="word-list" id="word-list"></div>
+
+  <div id="messaggio" class="completed"></div>
+
+  <div class="leaderboard" id="leaderboard" style="display:none;">
+    <h3>🏆 Classifica locale</h3>
+    <table id="score-table">
+      <tr><th>Nome</th><th>Tempo (s)</th></tr>
+    </table>
+  </div>
+
+  <a href="../calendario.html" class="btn-back">⬅ Torna al Calendario</a>
+
+  <script>
+    // 📋 Dati base
+    const nome = localStorage.getItem("utente") || "Ospite";
+    document.getElementById("nome").textContent = nome;
+
+    const parole = [
+      "ROCCASICURA","NATALE","FAMIGLIA","FELICITA","TRADIZIONI",
+      "REGALO","CIBO","BABBO","AMICIZIA","RUDOLPH","BAMBINO","COMUNITA",
+      "INVERNO","STELLA","ALBERO","PRESEPE","CANTO","LUCE","NEVE","SOLIDARIETA"
+    ];
+
+    const randomWords = parole.sort(() => Math.random() - 0.5).slice(0, 10);
+    const gridSize = 12;
+    const grid = Array(gridSize).fill(null).map(() => Array(gridSize).fill(""));
+
+    // 🧩 Inserisce parole orizzontali o verticali
+    randomWords.forEach(word => {
+      const horizontal = Math.random() < 0.5;
+      let placed = false;
+      while (!placed) {
+        const row = Math.floor(Math.random() * gridSize);
+        const col = Math.floor(Math.random() * gridSize);
+        if (horizontal && col + word.length <= gridSize) {
+          if (grid[row].slice(col, col + word.length).every(c => !c)) {
+            for (let i = 0; i < word.length; i++) grid[row][col + i] = word[i];
+            placed = true;
+          }
+        } else if (!horizontal && row + word.length <= gridSize) {
+          if (grid.slice(row, row + word.length).every(r => !r[col])) {
+            for (let i = 0; i < word.length; i++) grid[row + i][col] = word[i];
+            placed = true;
+          }
+        }
+      }
+    });
+
+    // 🔤 Riempi celle vuote con lettere casuali
+    const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    for (let r = 0; r < gridSize; r++) {
+      for (let c = 0; c < gridSize; c++) {
+        if (!grid[r][c]) grid[r][c] = alphabet[Math.floor(Math.random() * alphabet.length)];
+      }
+    }
+
+    const gridEl = document.getElementById("grid");
+    const wordListEl = document.getElementById("word-list");
+
+    // 🎯 Crea griglia
+    for (let r = 0; r < gridSize; r++) {
+      for (let c = 0; c < gridSize; c++) {
+        const cell = document.createElement("div");
+        cell.className = "cell";
+        cell.textContent = grid[r][c];
+        cell.dataset.row = r;
+        cell.dataset.col = c;
+        gridEl.appendChild(cell);
+      }
+    }
+
+    // 📜 Lista parole
+    randomWords.forEach(w => {
+      const span = document.createElement("div");
+      span.className = "word";
+      span.textContent = w;
+      wordListEl.appendChild(span);
+    });
+
+    // ⏱ Timer
+    let timer = 0;
+    let timerInterval = setInterval(() => {
+      timer++;
+      document.getElementById("timer").textContent = `⏱ Tempo: ${timer}s`;
+    }, 1000);
+
+    // 🔹 Logica di selezione
+    let selecting = false;
+    let selectedCells = [];
+    function clearHighlights() {
+      document.querySelectorAll(".cell.highlight").forEach(el => el.classList.remove("highlight"));
+      selectedCells = [];
+    }
+
+    function confirmWord(word) {
+      document.querySelectorAll(".cell.highlight").forEach(el => {
+        el.classList.remove("highlight");
+        el.classList.add("found");
+      });
+      document.querySelectorAll(".word").forEach(el => {
+        if (el.textContent === word) el.classList.add("found");
+      });
+      checkCompletion();
+    }
+
+    gridEl.addEventListener("mousedown", e => {
+      if (e.target.classList.contains("cell") && !e.target.classList.contains("found")) {
+        selecting = true;
+        clearHighlights();
+        e.target.classList.add("highlight");
+        selectedCells = [e.target];
+      }
+    });
+
+    gridEl.addEventListener("mousemove", e => {
+      if (selecting && e.target.classList.contains("cell") && !e.target.classList.contains("found")) {
+        if (!selectedCells.includes(e.target)) {
+          e.target.classList.add("highlight");
+          selectedCells.push(e.target);
+        }
+      }
+    });
+
+    window.addEventListener("mouseup", () => {
+      if (selecting) {
+        selecting = false;
+        const letters = selectedCells.map(c => c.textContent).join("");
+        const reverse = letters.split("").reverse().join("");
+        const foundWord = randomWords.find(w => w === letters || w === reverse);
+        if (foundWord) confirmWord(foundWord);
+        else clearHighlights();
+      }
+    });
+
+    // ✅ Fine gioco + classifica
+    function checkCompletion() {
+      const trovate = document.querySelectorAll(".word.found").length;
+      if (trovate === randomWords.length) {
+        clearInterval(timerInterval);
+        document.getElementById("messaggio").textContent =
+          `🎉 Complimenti ${nome}! Hai trovato tutte le parole in ${timer} secondi!`;
+        salvaPunteggio(nome, timer);
+        mostraClassifica();
+      }
+    }
+
+    function salvaPunteggio(nome, tempo) {
+      const key = "punteggi_giorno2";
+      let punteggi = JSON.parse(localStorage.getItem(key)) || [];
+      punteggi.push({ nome, tempo });
+      punteggi.sort((a, b) => a.tempo - b.tempo);
+      localStorage.setItem(key, JSON.stringify(punteggi));
+    }
+
+    function mostraClassifica() {
+      const key = "punteggi_giorno2";
+      const punteggi = JSON.parse(localStorage.getItem(key)) || [];
+      const table = document.getElementById("score-table");
+      const div = document.getElementById("leaderboard");
+      div.style.display = "block";
+      table.innerHTML = "<tr><th>Nome</th><th>Tempo (s)</th></tr>";
+      punteggi.slice(0, 10).forEach(p => {
+        const row = document.createElement("tr");
+        row.innerHTML = `<td>${p.nome}</td><td>${p.tempo}</td>`;
+        table.appendChild(row);
+      });
+    }
+  </script>
+</body>
+</html>
