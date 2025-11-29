@@ -1,57 +1,69 @@
 document.addEventListener("DOMContentLoaded", () => {
   const grid = document.querySelector(".calendar-grid");
   const popup = document.getElementById("popup");
-  const popupText = document.getElementById("popup-text");
+  const countdownEl = document.getElementById("countdown");
   const closePopup = document.getElementById("close-popup");
-  let countdownInterval; // serve per aggiornare il timer
+  let countdownInterval;
 
   const oggi = new Date();
-  const anno = oggi.getFullYear();
-  const mese = 11; // dicembre (0-based)
+  const anno = 2025;
+  const mese = 11; // dicembre (0 = gennaio → 11 = dicembre)
 
-  for (let i = 1; i <= 25; i++) {
+  /* ============================================================
+     📦 CREA LE CASELLE (1 → 24) — NIENTE GIORNO 25
+  ============================================================ */
+  for (let i = 1; i <= 24; i++) {
     const dataGiorno = new Date(anno, mese, i);
     const aperto = oggi >= dataGiorno;
 
     const box = document.createElement("div");
     box.classList.add("day-box");
-    if (i === 25) box.classList.add("day-special");
 
+    // Immagine interna
     const img = document.createElement("img");
-    img.src = `img/giorni/${i}.png`;
+    img.src = `immagini/giorni/${i}.png`;
     img.alt = `Giorno ${i}`;
     img.classList.add("day-image");
+
     box.appendChild(img);
 
-    // CLICK su giorno
+    /* === CLICK CASELLA === */
     box.addEventListener("click", () => {
-      clearInterval(countdownInterval); // ferma eventuale timer precedente
+      clearInterval(countdownInterval);
 
       if (aperto) {
-        // se è aperto → apri la pagina del giorno
-        window.location.href = `giorni/${i}.html`;
+        window.location.href = `giornate/${i}.html`;
       } else {
-        // se non è ancora disponibile → mostra countdown
-        popup.classList.remove("hidden");
-        aggiornaCountdown(dataGiorno);
-
-        // aggiorna ogni secondo
-        countdownInterval = setInterval(() => aggiornaCountdown(dataGiorno), 1000);
+        mostraPopup(dataGiorno);
       }
     });
 
     grid.appendChild(box);
   }
 
-  // Funzione per aggiornare il timer nel popup
+
+  /* ============================================================
+     ⏳ MOSTRA POPUP COUNTDOWN
+  ============================================================ */
+  function mostraPopup(targetDate) {
+    popup.classList.remove("hidden");
+    aggiornaCountdown(targetDate);
+
+    countdownInterval = setInterval(() => {
+      aggiornaCountdown(targetDate);
+    }, 1000);
+  }
+
+
+  /* ============================================================
+     ⏳ AGGIORNA IL COUNTDOWN OGNI SECONDO
+  ============================================================ */
   function aggiornaCountdown(targetDate) {
     const now = new Date();
     const diff = targetDate - now;
 
     if (diff <= 0) {
-      popupText.innerHTML = `
-        🎁 È arrivato il momento! Puoi ora aprire questa finestra!
-      `;
+      countdownEl.textContent = "È arrivato il momento! 🎁";
       clearInterval(countdownInterval);
       return;
     }
@@ -61,23 +73,18 @@ document.addEventListener("DOMContentLoaded", () => {
     const minuti = Math.floor((diff / (1000 * 60)) % 60);
     const secondi = Math.floor((diff / 1000) % 60);
 
-    popupText.innerHTML = `
-      <div style="text-align:center; font-size:1.2em; color:#7b0412; font-weight:bold;">
-        ⏳ Non ancora disponibile
-      </div>
-      <p style="text-align:center; margin-top:10px; color:#000;">
-        Mancano ancora<br>
-        <span style="font-size:1.5em; color:#b71c1c;">
-          ${giorni} g : ${String(ore).padStart(2, '0')} h : ${String(minuti).padStart(2, '0')} m : ${String(secondi).padStart(2, '0')} s
-        </span><br>
-        per l’apertura di questo giorno 🎁
-      </p>
-    `;
+    countdownEl.textContent =
+      `${giorni} g : ${String(ore).padStart(2, "0")} h : ` +
+      `${String(minuti).padStart(2, "0")} m : ${String(secondi).padStart(2, "0")} s`;
   }
 
-  // Chiudi popup
+
+  /* ============================================================
+     ❌ CHIUDI POPUP
+  ============================================================ */
   closePopup.addEventListener("click", () => {
     popup.classList.add("hidden");
     clearInterval(countdownInterval);
   });
 });
+
